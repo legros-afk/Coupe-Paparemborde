@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
-import { ADMIN_UID, COLLECTION_USERS, COLLECTION_MATCHES, PHASES } from '../constants'
+import { COLLECTION_USERS, COLLECTION_MATCHES, PHASES } from '../constants'
 import { PAYS, drapeau, nom } from '../data/countries'
 import PhotoProfil from '../components/PhotoProfil'
 import NavBar from '../components/NavBar'
@@ -27,9 +27,9 @@ export default function AdminPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('membres')
 
-  if (profile === null) { navigate('/dashboard'); return null }
-  if (!profile)         return <LoadingSpinner />
-  if (profile.uid !== ADMIN_UID) { navigate('/dashboard'); return null }
+  if (profile === null)          { navigate('/dashboard'); return null }
+  if (!profile)                  return <LoadingSpinner />
+  if (profile.isAdmin !== true)  { navigate('/dashboard'); return null }
 
   const tabs = [
     { key: 'membres', label: 'Membres' },

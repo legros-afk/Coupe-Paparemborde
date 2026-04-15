@@ -1,17 +1,18 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { ADMIN_UID } from '../constants'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 
 const links = [
-  { to: '/dashboard', icon: '🏠', label: 'Accueil' },
-  { to: '/matchs',    icon: '🏉', label: 'Matchs'  },
-  { to: '/chat/general', icon: '💬', label: 'Chat'  },
-  { to: '/profil',    icon: '👤', label: 'Profil'  },
+  { to: '/dashboard',    icon: '🏠', label: 'Accueil' },
+  { to: '/matchs',       icon: '🏉', label: 'Matchs'  },
+  { to: '/chat/general', icon: '💬', label: 'Chat'    },
+  { to: '/profil',       icon: '👤', label: 'Profil'  },
 ]
 
 export default function NavBar() {
   const { user } = useAuth()
-  const isAdmin = user?.uid === ADMIN_UID
+  const profile  = useCurrentUser(user?.uid)
+  const isAdmin  = profile?.isAdmin === true
 
   const allLinks = isAdmin
     ? [...links, { to: '/admin', icon: '⚙️', label: 'Admin' }]
