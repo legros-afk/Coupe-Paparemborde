@@ -5,7 +5,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { COLLECTION_USERS } from '../constants'
 import { signInWithGoogle } from '../utils/googleAuth'
-import { auth } from '../firebase'
 
 function translateError(code) {
   switch (code) {
