@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import NavBar from './components/NavBar'
+import { useSwipeNav } from './hooks/useSwipeNav'
 import LoginPage    from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
@@ -22,6 +23,7 @@ function PublicRoute({ children }) {
 }
 
 function AppLayout({ children }) {
+  useSwipeNav()
   return (
     <div className="max-w-lg mx-auto min-h-screen relative">
       {children}
