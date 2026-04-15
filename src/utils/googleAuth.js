@@ -1,15 +1,11 @@
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { auth, db } from '../firebase'
+import { db } from '../firebase'
 import { COLLECTION_USERS } from '../constants'
 
-const provider = new GoogleAuthProvider()
+export const googleProvider = new GoogleAuthProvider()
 
-export async function signInWithGoogle() {
-  const result    = await signInWithPopup(auth, provider)
-  const user      = result.user
-
-  // Create Firestore profile on first sign-in
+export async function createProfileIfNeeded(user) {
   const ref  = doc(db, COLLECTION_USERS, user.uid)
   const snap = await getDoc(ref)
 
@@ -34,6 +30,9 @@ export async function signInWithGoogle() {
       createdAt:    Date.now(),
     })
   }
+}
 
-  return user
+// Triggers a full-page redirect to Google — works on all mobile browsers
+export function signInWithGoogle(auth) {
+  return signInWithRedirect(auth, googleProvider)
 }

@@ -3,6 +3,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
 import { signInWithGoogle } from '../utils/googleAuth'
+// signInWithGoogle triggers a redirect — navigation happens automatically on return
 
 function translateError(code) {
   switch (code) {
@@ -44,14 +45,13 @@ export default function LoginPage() {
     setError(null)
     setLoadingGoogle(true)
     try {
-      await signInWithGoogle()
-      navigate('/dashboard')
+      await signInWithGoogle(auth) // triggers redirect, page will reload on return
     } catch (err) {
       const msg = translateError(err.code)
       if (msg) setError(msg)
-    } finally {
       setLoadingGoogle(false)
     }
+    // don't reset loadingGoogle — the redirect is in progress
   }
 
   return (
