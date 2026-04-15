@@ -8,6 +8,7 @@ import { useMatches } from '../hooks/useMatches'
 import { useUsers } from '../hooks/useUsers'
 import PhotoProfil from '../components/PhotoProfil'
 import LoadingSpinner from '../components/LoadingSpinner'
+import NavBar from '../components/NavBar'
 import { drapeau, nom } from '../data/countries'
 
 function formatTime(ts) {
@@ -125,7 +126,7 @@ export default function ChatPage() {
       {/* Input */}
       <form onSubmit={handleSend}
         className="bg-white border-t border-gray-100 px-4 py-3 flex items-end gap-3 flex-shrink-0"
-        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        style={{ paddingBottom: '12px' }}>
         <textarea
           value={texte} onChange={e => setTexte(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
@@ -139,6 +140,7 @@ export default function ChatPage() {
           <span className="text-white text-base">{sending ? '…' : '➤'}</span>
         </button>
       </form>
+      <NavBar />
     </div>
   )
 }
