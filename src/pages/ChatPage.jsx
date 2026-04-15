@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useSwipeNav } from '../hooks/useSwipeNav'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useChat } from '../hooks/useChat'
@@ -22,6 +23,7 @@ export default function ChatPage() {
   const allMatches        = useMatches()
   const allUsers          = useUsers()
 
+  useSwipeNav()
   const [texte, setTexte] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef         = useRef(null)
