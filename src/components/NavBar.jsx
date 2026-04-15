@@ -11,12 +11,17 @@ const links = [
 
 export default function NavBar() {
   const { user } = useAuth()
+  const isAdmin = user?.uid === ADMIN_UID
+
+  const allLinks = isAdmin
+    ? [...links, { to: '/admin', icon: '⚙️', label: 'Admin' }]
+    : links
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"
          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="max-w-lg mx-auto flex">
-        {links.map(({ to, icon, label }) => (
+        {allLinks.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}

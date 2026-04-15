@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import MatchesPage   from './pages/MatchesPage'
 import ChatPage      from './pages/ChatPage'
 import ProfilePage   from './pages/ProfilePage'
+import AdminPage     from './pages/AdminPage'
 import LoadingSpinner from './components/LoadingSpinner'
 
 function PrivateRoute({ children }) {
@@ -51,6 +52,9 @@ export default function App() {
       } />
       <Route path="/profil" element={
         <PrivateRoute><AppLayout><ProfilePage /></AppLayout></PrivateRoute>
+      } />
+      <Route path="/admin" element={
+        <PrivateRoute><AdminPage /></PrivateRoute>
       } />
 
       {/* Default */}
