@@ -58,7 +58,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col" style={{ height: 'calc(100dvh - 60px)' }}>
       {/* Header */}
       <div className="bg-orange-rwc px-4 pt-12 pb-4 flex-shrink-0">
         <div className="flex items-center gap-3">
