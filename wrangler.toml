@@ -1,3 +1,5 @@
-# Cloudflare Pages configuration
 name = "coupe-paparemborde"
-pages_build_output_dir = "dist"
+compatibility_date = "2026-04-15"
+
+[assets]
+directory = "./dist"
