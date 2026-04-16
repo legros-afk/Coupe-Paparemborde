@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const { user }    = useAuth()
   const profile     = useCurrentUser(user?.uid)
   const allUsers    = useUsers()
-  const allMatches  = useMatches()
+  const { matches: allMatches } = useMatches()
 
   const codeVersUser = Object.fromEntries(
     allUsers.filter(u => u.countryCode).map(u => [u.countryCode, u])

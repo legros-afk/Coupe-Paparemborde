@@ -33,7 +33,7 @@ function Chip({ active, label, onClick }) {
 
 export default function MatchesPage() {
   const navigate     = useNavigate()
-  const allMatches   = useMatches()
+  const { matches: allMatches } = useMatches()
   const allUsers     = useUsers()
   const [filtrePhase,  setFiltrePhase]  = useState(null)
   const [filtreStatut, setFiltreStatut] = useState(null)

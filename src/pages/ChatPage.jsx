@@ -21,7 +21,7 @@ export default function ChatPage() {
   const { user }          = useAuth()
   const profile           = useCurrentUser(user?.uid)
   const { messages, loading, sendMessage } = useChat(salonId)
-  const allMatches        = useMatches()
+  const { matches: allMatches } = useMatches()
   const allUsers          = useUsers()
 
   useSwipeNav()

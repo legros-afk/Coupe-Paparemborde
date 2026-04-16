@@ -156,7 +156,7 @@ function OngletMembres() {
 const EMPTY_MATCH = { homeTeamCode: '', awayTeamCode: '', phase: 'PHASE_DE_POULES', groupe: '', stade: '', ville: '', dateLocal: '' }
 
 function OngletMatchs() {
-  const matches = useMatches()
+  const { matches, error: matchesError } = useMatches()
   const [showForm, setShowForm]     = useState(false)
   const [showJson, setShowJson]     = useState(false)
   const [form, setForm]             = useState(EMPTY_MATCH)
@@ -261,6 +261,12 @@ function OngletMatchs() {
         </div>
       )}
 
+      {matchesError && (
+        <div className="px-4 py-3 rounded-xl bg-red-50 text-red-700 text-sm">
+          Erreur de lecture Firestore : {matchesError}. Vérifiez que les règles de sécurité sont déployées.
+        </div>
+      )}
+
       {/* Add match modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-40 flex items-end justify-center" onClick={() => setShowForm(false)}>
@@ -356,7 +362,7 @@ function OngletMatchs() {
 // ── Scores ─────────────────────────────────────────────────────────────────────
 
 function OngletScores() {
-  const matches = useMatches()
+  const { matches } = useMatches()
   const users   = useUsers()
   const pending = matches.filter(m => m.statut !== 'TERMINE').sort((a, b) => a.dateTimestamp - b.dateTimestamp)
 
