@@ -20,6 +20,7 @@ export const PAYS = [
   { code: 'USA', nom: 'États-Unis',        drapeau: '🇺🇸', confederation: 'Amériques' },
   { code: 'CHI', nom: 'Chili',             drapeau: '🇨🇱', confederation: 'Amériques' },
   { code: 'NAM', nom: 'Namibie',           drapeau: '🇳🇦', confederation: 'Afrique' },
+  { code: 'ZIM', nom: 'Zimbabwe',          drapeau: '🇿🇼', confederation: 'Afrique' },
   { code: 'ESP', nom: 'Espagne',           drapeau: '🇪🇸', confederation: 'Europe' },
   { code: 'CAN', nom: 'Canada',            drapeau: '🇨🇦', confederation: 'Amériques' },
   { code: 'HKG', nom: 'Hong Kong',         drapeau: '🇭🇰', confederation: 'Asie' },
