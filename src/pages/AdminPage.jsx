@@ -8,6 +8,7 @@ import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
 import { COLLECTION_USERS, COLLECTION_MATCHES, PHASES } from '../constants'
 import { PAYS, drapeau, nom } from '../data/countries'
+import { RWC2027_FIXTURES } from '../data/rwc2027fixtures'
 import PhotoProfil from '../components/PhotoProfil'
 import NavBar from '../components/NavBar'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -188,6 +189,22 @@ function OngletMatchs() {
     finally { setSaving(false) }
   }
 
+  async function chargerRwc2027() {
+    setSaving(true)
+    try {
+      for (const f of RWC2027_FIXTURES) {
+        await addDoc(collection(db, COLLECTION_MATCHES), {
+          ...f,
+          homeTeamName: nom(f.homeTeamCode),
+          awayTeamName: nom(f.awayTeamCode),
+          statut: 'PLANIFIE', homeScore: null, awayScore: null, sportsDbId: '',
+        })
+      }
+      showToast(`${RWC2027_FIXTURES.length} matchs RWC 2027 importés !`)
+    } catch (err) { showToast('Erreur : ' + err.message) }
+    finally { setSaving(false) }
+  }
+
   async function importerJson() {
     setSaving(true)
     try {
@@ -291,10 +308,15 @@ function OngletMatchs() {
       )}
 
       {/* Action buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        <button onClick={chargerRwc2027}
+          disabled={saving}
+          className="flex-1 bg-teal-rwc text-white font-semibold py-2 rounded-xl text-sm disabled:opacity-40">
+          🏉 Charger RWC 2027
+        </button>
         <button onClick={() => setShowJson(true)}
           className="flex-1 border border-orange-rwc text-orange-rwc font-semibold py-2 rounded-xl text-sm">
-          📋 Import JSON
+          📋 JSON
         </button>
         <button onClick={() => setShowForm(true)}
           className="flex-1 bg-orange-rwc text-white font-semibold py-2 rounded-xl text-sm">
