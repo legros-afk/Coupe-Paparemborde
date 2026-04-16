@@ -41,7 +41,6 @@ export default function ProfilePage() {
           <div className="text-center">
             <p className="text-xl font-bold text-warm-black">{profile.prenom} {profile.nom}</p>
             <p className="text-sm text-warm-gray mt-0.5">{profile.email}</p>
-            <p className="text-[10px] text-warm-gray/60 mt-1 font-mono break-all">{profile.uid}</p>
           </div>
         </div>
 
