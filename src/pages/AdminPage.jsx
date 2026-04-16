@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, updateDoc, addDoc, collection, increment, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -28,9 +28,11 @@ export default function AdminPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('membres')
 
-  if (profile === null)          { navigate('/dashboard'); return null }
-  if (!profile)                  return <LoadingSpinner />
-  if (profile.isAdmin !== true)  { navigate('/dashboard'); return null }
+  useEffect(() => {
+    if (profile && profile.isAdmin !== true) navigate('/dashboard')
+  }, [profile, navigate])
+
+  if (!profile) return <LoadingSpinner />
 
   const tabs = [
     { key: 'membres', label: 'Membres' },
