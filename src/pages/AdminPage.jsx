@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, updateDoc, addDoc, collection, increment, writeBatch } from 'firebase/firestore'
+import { doc, updateDoc, collection, increment, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
@@ -194,14 +194,17 @@ function OngletMatchs() {
   async function chargerRwc2027() {
     setSaving(true)
     try {
+      const batch = writeBatch(db)
       for (const f of RWC2027_FIXTURES) {
-        await addDoc(collection(db, COLLECTION_MATCHES), {
+        const ref = doc(collection(db, COLLECTION_MATCHES))
+        batch.set(ref, {
           ...f,
           homeTeamName: nom(f.homeTeamCode),
           awayTeamName: nom(f.awayTeamCode),
           statut: 'PLANIFIE', homeScore: null, awayScore: null, sportsDbId: '',
         })
       }
+      await batch.commit()
       showToast(`${RWC2027_FIXTURES.length} matchs RWC 2027 importés !`)
     } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
@@ -211,10 +214,12 @@ function OngletMatchs() {
     setSaving(true)
     try {
       const arr = JSON.parse(jsonText.trim())
-      let nb = 0
-      for (const obj of arr) {
-        if (!obj.homeTeamCode || !obj.awayTeamCode) continue
-        await addDoc(collection(db, COLLECTION_MATCHES), {
+      const valid = arr.filter(obj => obj.homeTeamCode && obj.awayTeamCode)
+      if (valid.length === 0) { showToast('Aucun match valide dans le JSON'); return }
+      const batch = writeBatch(db)
+      for (const obj of valid) {
+        const ref = doc(collection(db, COLLECTION_MATCHES))
+        batch.set(ref, {
           homeTeamCode: obj.homeTeamCode,
           awayTeamCode: obj.awayTeamCode,
           homeTeamName: obj.homeTeamName ?? nom(obj.homeTeamCode),
@@ -229,10 +234,10 @@ function OngletMatchs() {
           awayScore:    null,
           sportsDbId:   '',
         })
-        nb++
       }
-      showToast(`${nb} match(s) importé(s) !`); setShowJson(false); setJsonText('')
-    } catch (err) { showToast('JSON invalide : ' + err.message) }
+      await batch.commit()
+      showToast(`${valid.length} match(s) importé(s) !`); setShowJson(false); setJsonText('')
+    } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
   }
 
