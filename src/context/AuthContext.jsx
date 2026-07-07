@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { onAuthStateChanged, getRedirectResult } from 'firebase/auth'
+import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../firebase'
-import { createProfileIfNeeded } from '../utils/googleAuth'
 
 const AuthContext = createContext(null)
 
@@ -10,11 +9,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Handle return from Google redirect sign-in
-    getRedirectResult(auth)
-      .then(result => { if (result?.user) return createProfileIfNeeded(result.user) })
-      .catch(() => {}) // ignore redirect errors (e.g. user cancelled)
-
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u)
       setLoading(false)

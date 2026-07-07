@@ -3,7 +3,6 @@ import { signInWithEmailAndPassword } from 'firebase/auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
 import { signInWithGoogle } from '../utils/googleAuth'
-// signInWithGoogle triggers a redirect — navigation happens automatically on return
 
 function translateError(code) {
   switch (code) {
@@ -13,7 +12,9 @@ function translateError(code) {
     case 'auth/invalid-credential':      return 'Mot de passe incorrect.'
     case 'auth/too-many-requests':       return 'Trop de tentatives. Réessayez plus tard.'
     case 'auth/network-request-failed':  return 'Erreur réseau. Vérifiez votre connexion.'
-    case 'auth/popup-closed-by-user':    return null
+    case 'auth/popup-blocked':           return 'Popup bloquée par le navigateur. Autorisez les popups et réessayez.'
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request': return null
     default:                             return 'Erreur de connexion. Réessayez.'
   }
 }
@@ -45,13 +46,14 @@ export default function LoginPage() {
     setError(null)
     setLoadingGoogle(true)
     try {
-      await signInWithGoogle(auth) // triggers redirect, page will reload on return
+      await signInWithGoogle(auth)
+      navigate('/dashboard')
     } catch (err) {
       const msg = translateError(err.code)
       if (msg) setError(msg)
+    } finally {
       setLoadingGoogle(false)
     }
-    // don't reset loadingGoogle — the redirect is in progress
   }
 
   return (

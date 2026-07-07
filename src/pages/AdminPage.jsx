@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, updateDoc, collection, increment, writeBatch } from 'firebase/firestore'
+import { doc, addDoc, updateDoc, collection, increment, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
@@ -9,6 +9,7 @@ import { useMatches } from '../hooks/useMatches'
 import { COLLECTION_USERS, COLLECTION_MATCHES, PHASES } from '../constants'
 import { PAYS, drapeau, nom } from '../data/countries'
 import { RWC2027_FIXTURES } from '../data/rwc2027fixtures'
+import { buildMatch } from '../utils/buildMatch'
 import PhotoProfil from '../components/PhotoProfil'
 import NavBar from '../components/NavBar'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -170,22 +171,15 @@ function OngletMatchs() {
     e.preventDefault()
     setSaving(true)
     try {
-      const ts = form.dateLocal ? new Date(form.dateLocal).getTime() : 0
-      await addDoc(collection(db, COLLECTION_MATCHES), {
+      await addDoc(collection(db, COLLECTION_MATCHES), buildMatch({
         homeTeamCode: form.homeTeamCode,
         awayTeamCode: form.awayTeamCode,
-        homeTeamName: nom(form.homeTeamCode),
-        awayTeamName: nom(form.awayTeamCode),
         phase:        form.phase,
         groupe:       form.groupe,
         stade:        form.stade,
         ville:        form.ville,
-        dateTimestamp: ts,
-        statut:       'PLANIFIE',
-        homeScore:    null,
-        awayScore:    null,
-        sportsDbId:   '',
-      })
+        dateTimestamp: form.dateLocal ? new Date(form.dateLocal).getTime() : 0,
+      }))
       showToast('Match ajouté !'); setShowForm(false); setForm(EMPTY_MATCH)
     } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
@@ -196,13 +190,7 @@ function OngletMatchs() {
     try {
       const batch = writeBatch(db)
       for (const f of RWC2027_FIXTURES) {
-        const ref = doc(collection(db, COLLECTION_MATCHES))
-        batch.set(ref, {
-          ...f,
-          homeTeamName: nom(f.homeTeamCode),
-          awayTeamName: nom(f.awayTeamCode),
-          statut: 'PLANIFIE', homeScore: null, awayScore: null, sportsDbId: '',
-        })
+        batch.set(doc(collection(db, COLLECTION_MATCHES)), buildMatch(f))
       }
       await batch.commit()
       showToast(`${RWC2027_FIXTURES.length} matchs RWC 2027 importés !`)
@@ -213,30 +201,24 @@ function OngletMatchs() {
   async function importerJson() {
     setSaving(true)
     try {
-      const arr = JSON.parse(jsonText.trim())
-      const valid = arr.filter(obj => obj.homeTeamCode && obj.awayTeamCode)
-      if (valid.length === 0) { showToast('Aucun match valide dans le JSON'); return }
+      let arr
+      try { arr = JSON.parse(jsonText.trim()) }
+      catch { throw new Error('JSON illisible — vérifiez la syntaxe') }
+      if (!Array.isArray(arr)) throw new Error('le JSON doit être un tableau de matchs [ … ]')
+      if (arr.length === 0)    throw new Error('aucun match dans le JSON')
+
+      // Tout ou rien : on valide chaque entrée avant d'écrire quoi que ce soit
+      const docs = arr.map((obj, i) => {
+        try { return buildMatch(obj) }
+        catch (err) { throw new Error(`match ${i + 1} : ${err.message}`) }
+      })
+
       const batch = writeBatch(db)
-      for (const obj of valid) {
-        const ref = doc(collection(db, COLLECTION_MATCHES))
-        batch.set(ref, {
-          homeTeamCode: obj.homeTeamCode,
-          awayTeamCode: obj.awayTeamCode,
-          homeTeamName: obj.homeTeamName ?? nom(obj.homeTeamCode),
-          awayTeamName: obj.awayTeamName ?? nom(obj.awayTeamCode),
-          phase:        obj.phase ?? 'PHASE_DE_POULES',
-          groupe:       obj.groupe ?? '',
-          stade:        obj.stade  ?? '',
-          ville:        obj.ville  ?? '',
-          dateTimestamp: obj.dateTimestamp ?? 0,
-          statut:       obj.statut ?? 'PLANIFIE',
-          homeScore:    null,
-          awayScore:    null,
-          sportsDbId:   '',
-        })
+      for (const m of docs) {
+        batch.set(doc(collection(db, COLLECTION_MATCHES)), m)
       }
       await batch.commit()
-      showToast(`${valid.length} match(s) importé(s) !`); setShowJson(false); setJsonText('')
+      showToast(`${docs.length} match(s) importé(s) !`); setShowJson(false); setJsonText('')
     } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
   }

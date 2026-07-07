@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth'
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { COLLECTION_USERS } from '../constants'
@@ -32,7 +32,11 @@ export async function createProfileIfNeeded(user) {
   }
 }
 
-// Triggers a full-page redirect to Google — works on all mobile browsers
-export function signInWithGoogle(auth) {
-  return signInWithRedirect(auth, googleProvider)
+// Popup plutôt que redirect : signInWithRedirect échoue silencieusement sur
+// Safari/iOS (partitionnement des cookies tiers) quand authDomain n'est pas
+// le domaine de l'app.
+export async function signInWithGoogle(auth) {
+  const result = await signInWithPopup(auth, googleProvider)
+  await createProfileIfNeeded(result.user)
+  return result
 }

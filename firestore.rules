@@ -12,10 +12,20 @@ service cloud.firestore {
     }
 
     // Users collection
+    // Game fields (points, victoires, matchsJoues, countryCode, isAdmin)
+    // are admin-only : un membre ne peut modifier que son propre profil cosmétique.
     match /users/{userId} {
       allow read:   if isSignedIn();
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.isAdmin == false
+        && request.resource.data.points == 0
+        && request.resource.data.victoires == 0
+        && request.resource.data.matchsJoues == 0
+        && request.resource.data.countryCode == '';
+      allow update: if isAdmin()
+        || (isSignedIn() && request.auth.uid == userId
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['prenom', 'nom', 'photoUrl', 'photoDriveId']));
     }
 
     // Matches collection — admin write, authenticated read

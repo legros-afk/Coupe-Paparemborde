@@ -1,5 +1,3 @@
-export const ADMIN_UID = 'pEYJyOaSmudBTlFhdMfoThsG5zj2'
-
 export const COLLECTION_USERS   = 'users'
 export const COLLECTION_MATCHES = 'matches'
 
