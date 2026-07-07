@@ -3,15 +3,20 @@ import { signOut } from 'firebase/auth'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
+import { useUsers } from '../hooks/useUsers'
+import { useMatches } from '../hooks/useMatches'
 import PhotoProfil from '../components/PhotoProfil'
-import { drapeau, nom, PAR_CODE } from '../data/countries'
+import { drapeau, nom } from '../data/countries'
 import { PHASES } from '../constants'
 import { auth } from '../firebase'
+import { computeStandings, userCountries } from '../utils/standings'
 
 export default function ProfilePage() {
   const navigate    = useNavigate()
   const { user }    = useAuth()
   const profile     = useCurrentUser(user?.uid)
+  const allUsers    = useUsers()
+  const { matches } = useMatches()
   const [confirm, setConfirm] = useState(false)
 
   async function handleLogout() {
@@ -21,7 +26,8 @@ export default function ProfilePage() {
 
   if (!profile) return null
 
-  const pays = profile.countryCode ? PAR_CODE[profile.countryCode] : null
+  const me      = computeStandings(allUsers, matches).find(u => u.uid === profile.uid)
+  const mesPays = userCountries(profile)
 
   return (
     <div className="pb-24">
@@ -44,30 +50,35 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Country */}
-        {pays ? (
-          <div className="bg-white rounded-2xl p-5 flex flex-col items-center gap-2 shadow-sm">
-            <p className="text-xs font-semibold text-warm-gray uppercase tracking-wider">Mon pays</p>
-            <span className="text-5xl">{pays.drapeau}</span>
-            <p className="text-lg font-bold text-warm-black">{pays.nom}</p>
-            <span className="px-3 py-1 rounded-full bg-orange-rwc/10 text-orange-rwc text-xs font-semibold">
-              {pays.confederation}
-            </span>
+        {/* Countries */}
+        {mesPays.length > 0 ? (
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <p className="text-xs font-semibold text-warm-gray uppercase tracking-wider text-center mb-4">
+              {mesPays.length === 1 ? 'Mon pays' : `Mes pays (${mesPays.length})`}
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              {mesPays.map(code => (
+                <div key={code} className="flex flex-col items-center gap-1 w-20">
+                  <span className="text-4xl">{drapeau(code)}</span>
+                  <p className="text-xs font-semibold text-warm-black text-center leading-tight">{nom(code)}</p>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-5 flex flex-col items-center gap-2 shadow-sm text-center">
             <span className="text-4xl">🏉</span>
-            <p className="font-semibold text-warm-black">Pays non encore attribué</p>
-            <p className="text-sm text-warm-gray">L'administrateur vous attribuera un pays bientôt.</p>
+            <p className="font-semibold text-warm-black">Pays non encore attribués</p>
+            <p className="text-sm text-warm-gray">L'administrateur fera le tirage au sort bientôt.</p>
           </div>
         )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { emoji: '🏆', label: 'Points',   value: profile.points,      bg: 'bg-orange-rwc/10', color: 'text-orange-rwc' },
-            { emoji: '✅', label: 'Victoires', value: profile.victoires,   bg: 'bg-teal-rwc/10',   color: 'text-teal-rwc'   },
-            { emoji: '🏉', label: 'Matchs',    value: profile.matchsJoues, bg: 'bg-lime-rwc/20',   color: 'text-warm-black' },
+            { emoji: '🏆', label: 'Points',   value: me?.points ?? 0,      bg: 'bg-orange-rwc/10', color: 'text-orange-rwc' },
+            { emoji: '✅', label: 'Victoires', value: me?.victoires ?? 0,   bg: 'bg-teal-rwc/10',   color: 'text-teal-rwc'   },
+            { emoji: '🏉', label: 'Matchs',    value: me?.matchsJoues ?? 0, bg: 'bg-lime-rwc/20',   color: 'text-warm-black' },
           ].map(({ emoji, label, value, bg, color }) => (
             <div key={label} className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1`}>
               <span className="text-xl">{emoji}</span>

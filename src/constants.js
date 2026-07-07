@@ -1,5 +1,6 @@
 export const COLLECTION_USERS   = 'users'
 export const COLLECTION_MATCHES = 'matches'
+export const COLLECTION_CONFIG  = 'config'
 
 export const DB_CHATS = 'chats'
 

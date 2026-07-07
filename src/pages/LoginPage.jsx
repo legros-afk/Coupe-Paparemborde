@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
-import { signInWithGoogle } from '../utils/googleAuth'
+import { signInWithGoogleLogin } from '../utils/googleAuth'
 
 function translateError(code) {
   switch (code) {
@@ -15,6 +15,7 @@ function translateError(code) {
     case 'auth/popup-blocked':           return 'Popup bloquée par le navigateur. Autorisez les popups et réessayez.'
     case 'auth/popup-closed-by-user':
     case 'auth/cancelled-popup-request': return null
+    case 'app/no-profile':               return 'Ce compte Google n’est pas encore membre. Utilisez « Créer un compte » avec le code famille.'
     default:                             return 'Erreur de connexion. Réessayez.'
   }
 }
@@ -46,7 +47,7 @@ export default function LoginPage() {
     setError(null)
     setLoadingGoogle(true)
     try {
-      await signInWithGoogle(auth)
+      await signInWithGoogleLogin(auth)
       navigate('/dashboard')
     } catch (err) {
       const msg = translateError(err.code)

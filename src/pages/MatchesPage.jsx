@@ -5,6 +5,7 @@ import { useUsers } from '../hooks/useUsers'
 import CarteMatch from '../components/CarteMatch'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { PHASES } from '../constants'
+import { buildCodeToUser } from '../utils/standings'
 
 const PHASE_FILTERS = [
   { key: null, label: 'Tous' },
@@ -38,9 +39,7 @@ export default function MatchesPage() {
   const [filtrePhase,  setFiltrePhase]  = useState(null)
   const [filtreStatut, setFiltreStatut] = useState(null)
 
-  const codeVersUser = Object.fromEntries(
-    allUsers.filter(u => u.countryCode).map(u => [u.countryCode, u])
-  )
+  const codeVersUser = buildCodeToUser(allUsers)
 
   const filtered = allMatches
     .filter(m => !filtrePhase  || m.phase  === filtrePhase)

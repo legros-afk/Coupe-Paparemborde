@@ -11,27 +11,41 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
+    // Membre de la famille = possède un document users/. Un compte Google
+    // quelconque (sans code famille) ne peut donc rien lire.
+    function hasProfile() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     // Users collection
-    // Game fields (points, victoires, matchsJoues, countryCode, isAdmin)
-    // are admin-only : un membre ne peut modifier que son propre profil cosmétique.
+    // Création : le code famille (config/registration) est obligatoire et le
+    // profil démarre sans privilège ni pays. Mise à jour : un membre ne touche
+    // que ses champs cosmétiques ; pays et rôle admin restent admin-only.
+    // (Les points ne sont plus stockés : le classement est dérivé des matchs.)
     match /users/{userId} {
-      allow read:   if isSignedIn();
+      allow read:   if hasProfile() || (isSignedIn() && request.auth.uid == userId);
       allow create: if isSignedIn() && request.auth.uid == userId
         && request.resource.data.isAdmin == false
-        && request.resource.data.points == 0
-        && request.resource.data.victoires == 0
-        && request.resource.data.matchsJoues == 0
-        && request.resource.data.countryCode == '';
+        && request.resource.data.countryCodes is list
+        && request.resource.data.countryCodes.size() == 0
+        && request.resource.data.inviteCode == get(/databases/$(database)/documents/config/registration).data.inviteCode;
       allow update: if isAdmin()
         || (isSignedIn() && request.auth.uid == userId
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['prenom', 'nom', 'photoUrl', 'photoDriveId']));
     }
 
-    // Matches collection — admin write, authenticated read
+    // Matches collection — admin write, family read
     match /matches/{matchId} {
-      allow read:  if isSignedIn();
+      allow read:  if hasProfile();
       allow write: if isAdmin();
+    }
+
+    // Config (code famille) — admin only ; les règles y accèdent via get()
+    // sans que les clients aient besoin du droit de lecture.
+    match /config/{docId} {
+      allow read, write: if isAdmin();
     }
   }
 }

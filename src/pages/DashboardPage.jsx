@@ -6,6 +6,7 @@ import { useMatches } from '../hooks/useMatches'
 import CarteMatch from '../components/CarteMatch'
 import PhotoProfil from '../components/PhotoProfil'
 import { drapeau, nom } from '../data/countries'
+import { buildCodeToUser, computeStandings, userCountries } from '../utils/standings'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -17,9 +18,10 @@ export default function DashboardPage() {
   const allUsers    = useUsers()
   const { matches: allMatches } = useMatches()
 
-  const codeVersUser = Object.fromEntries(
-    allUsers.filter(u => u.countryCode).map(u => [u.countryCode, u])
-  )
+  const codeVersUser = buildCodeToUser(allUsers)
+  const standings    = computeStandings(allUsers, allMatches)
+  const me           = standings.find(u => u.uid === user?.uid)
+  const mesPays      = userCountries(profile)
 
   const duels = allMatches.filter(
     m => codeVersUser[m.homeTeamCode] || codeVersUser[m.awayTeamCode]
@@ -29,7 +31,7 @@ export default function DashboardPage() {
     .filter(m => m.statut !== 'TERMINE')
     .slice(0, 5)
 
-  const top5 = allUsers.slice(0, 5)
+  const top5 = standings.slice(0, 5)
 
   if (!profile) return <LoadingSpinner />
 
@@ -50,15 +52,18 @@ export default function DashboardPage() {
           <PhotoProfil url={profile.photoUrl} prenom={profile.prenom} size={56} />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-warm-black">Bonjour, {profile.prenom} !</p>
-            {profile.countryCode
+            {mesPays.length > 0
               ? <p className="text-sm text-warm-gray mt-0.5">
-                  {drapeau(profile.countryCode)} {nom(profile.countryCode)}
+                  {mesPays.length === 1
+                    ? <>{drapeau(mesPays[0])} {nom(mesPays[0])}</>
+                    : <>{mesPays.map(c => drapeau(c)).join(' ')} · {mesPays.length} pays</>
+                  }
                 </p>
-              : <p className="text-sm text-warm-gray/70 mt-0.5">Pays non encore attribué</p>
+              : <p className="text-sm text-warm-gray/70 mt-0.5">Pays non encore attribués</p>
             }
           </div>
           <div className="flex flex-col items-center flex-shrink-0">
-            <span className="text-3xl font-bold text-orange-rwc">{profile.points}</span>
+            <span className="text-3xl font-bold text-orange-rwc">{me?.points ?? 0}</span>
             <span className="text-xs text-warm-gray">pts</span>
           </div>
         </div>
@@ -122,8 +127,10 @@ export default function DashboardPage() {
                   <PhotoProfil url={u.photoUrl} prenom={u.prenom} size={38} />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-warm-black truncate">{u.prenom} {u.nom}</p>
-                    {u.countryCode && (
-                      <p className="text-xs text-warm-gray">{drapeau(u.countryCode)} {nom(u.countryCode)}</p>
+                    {userCountries(u).length > 0 && (
+                      <p className="text-xs text-warm-gray truncate">
+                        {userCountries(u).map(c => drapeau(c)).join(' ')}
+                      </p>
                     )}
                   </div>
                   <div className="text-right flex-shrink-0">

@@ -3,6 +3,16 @@ import { PAR_CODE, nom } from '../data/countries'
 
 const STATUTS = ['PLANIFIE', 'EN_COURS', 'TERMINE']
 
+// Clé de contenu pour détecter les doublons à l'import (même affiche, même phase)
+export function matchKey(m) {
+  return `${m.phase}|${m.groupe || ''}|${m.homeTeamCode}|${m.awayTeamCode}`
+}
+
+// ID de document déterministe : réimporter le même match écrase au lieu de dupliquer
+export function matchDocId(m) {
+  return [m.phase, m.groupe || 'X', m.homeTeamCode, m.awayTeamCode].join('_')
+}
+
 // Valide et normalise un match avant écriture Firestore.
 // Une phase ou un code équipe invalide fausserait silencieusement les points
 // (PHASES[phase] introuvable → 0 point) : on refuse ici avec un message précis.

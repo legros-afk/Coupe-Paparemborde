@@ -10,6 +10,7 @@ import PhotoProfil from '../components/PhotoProfil'
 import LoadingSpinner from '../components/LoadingSpinner'
 import NavBar from '../components/NavBar'
 import { drapeau, nom } from '../data/countries'
+import { buildCodeToUser } from '../utils/standings'
 
 function formatTime(ts) {
   return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(ts))
@@ -31,9 +32,7 @@ export default function ChatPage() {
 
   const isGeneral = salonId === 'general'
   const match = !isGeneral ? allMatches.find(m => m.id === salonId) : null
-  const codeVersUser = Object.fromEntries(
-    allUsers.filter(u => u.countryCode).map(u => [u.countryCode, u])
-  )
+  const codeVersUser = buildCodeToUser(allUsers)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

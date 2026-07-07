@@ -4,7 +4,7 @@ import { doc, setDoc } from 'firebase/firestore'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { COLLECTION_USERS } from '../constants'
-import { signInWithGoogle } from '../utils/googleAuth'
+import { signInWithGoogleRegister } from '../utils/googleAuth'
 
 function translateError(code) {
   switch (code) {
@@ -14,6 +14,7 @@ function translateError(code) {
     case 'auth/popup-blocked':        return 'Popup bloquée par le navigateur. Autorisez les popups et réessayez.'
     case 'auth/popup-closed-by-user':
     case 'auth/cancelled-popup-request': return null
+    case 'permission-denied':         return 'Code famille invalide.'
     default:                          return 'Erreur lors de la création du compte.'
   }
 }
@@ -24,18 +25,23 @@ export default function RegisterPage() {
   const [nom,    setNom]    = useState('')
   const [email,  setEmail]  = useState('')
   const [mdp,    setMdp]    = useState('')
+  const [codeFamille, setCodeFamille] = useState('')
   const [showMdp, setShowMdp] = useState(false)
   const [error,   setError]   = useState(null)
   const [loading, setLoading] = useState(false)
 
   const [loadingGoogle, setLoadingGoogle] = useState(false)
-  const canSubmit = prenom && nom && email && mdp.length >= 6 && !loading
+  const canSubmit = prenom && nom && email && mdp.length >= 6 && codeFamille.trim() && !loading
 
   async function handleGoogle() {
+    if (!codeFamille.trim()) {
+      setError('Entrez d’abord le code famille.')
+      return
+    }
     setError(null)
     setLoadingGoogle(true)
     try {
-      await signInWithGoogle(auth)
+      await signInWithGoogleRegister(auth, codeFamille.trim())
       navigate('/dashboard')
     } catch (err) {
       const msg = translateError(err.code)
@@ -52,12 +58,20 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, mdp)
-      await setDoc(doc(db, COLLECTION_USERS, cred.user.uid), {
-        uid: cred.user.uid, prenom, nom, email,
-        photoUrl: '', photoDriveId: '', countryCode: '',
-        isAdmin: false, points: 0, victoires: 0, matchsJoues: 0,
-        createdAt: Date.now(),
-      })
+      try {
+        await setDoc(doc(db, COLLECTION_USERS, cred.user.uid), {
+          uid: cred.user.uid, prenom, nom, email,
+          photoUrl: '', photoDriveId: '',
+          countryCodes: [], isAdmin: false,
+          inviteCode: codeFamille.trim(),
+          createdAt: Date.now(),
+        })
+      } catch (err) {
+        // Profil refusé (mauvais code) : on supprime le compte Auth orphelin
+        // pour que l'e-mail reste réutilisable au prochain essai.
+        await cred.user.delete().catch(() => {})
+        throw err
+      }
       navigate('/dashboard')
     } catch (err) {
       setError(translateError(err.code))
@@ -82,8 +96,16 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {/* Code famille — requis quel que soit le mode d'inscription */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-warm-gray mb-1">Code famille</label>
+            <input type="text" value={codeFamille} onChange={e => setCodeFamille(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-rwc/50 focus:border-orange-rwc"
+              placeholder="Demandez-le sur le groupe WhatsApp 😉" required />
+          </div>
+
           {/* Google button */}
-          <button onClick={handleGoogle} type="button" disabled={loadingGoogle || loading}
+          <button onClick={handleGoogle} type="button" disabled={loadingGoogle || loading || !codeFamille.trim()}
             className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 text-sm font-semibold text-warm-black hover:bg-gray-50 active:scale-95 transition-transform disabled:opacity-50 mb-4">
             {loadingGoogle
               ? <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />

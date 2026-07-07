@@ -1,42 +1,54 @@
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { COLLECTION_USERS } from '../constants'
 
-export const googleProvider = new GoogleAuthProvider()
-
-export async function createProfileIfNeeded(user) {
-  const ref  = doc(db, COLLECTION_USERS, user.uid)
-  const snap = await getDoc(ref)
-
-  if (!snap.exists()) {
-    const displayName = user.displayName ?? ''
-    const parts       = displayName.split(' ')
-    const prenom      = parts[0] ?? ''
-    const nom         = parts.slice(1).join(' ') ?? ''
-
-    await setDoc(ref, {
-      uid:          user.uid,
-      prenom,
-      nom,
-      email:        user.email ?? '',
-      photoUrl:     user.photoURL ?? '',
-      photoDriveId: '',
-      countryCode:  '',
-      isAdmin:      false,
-      points:       0,
-      victoires:    0,
-      matchsJoues:  0,
-      createdAt:    Date.now(),
-    })
-  }
-}
-
 // Popup plutôt que redirect : signInWithRedirect échoue silencieusement sur
 // Safari/iOS (partitionnement des cookies tiers) quand authDomain n'est pas
 // le domaine de l'app.
-export async function signInWithGoogle(auth) {
-  const result = await signInWithPopup(auth, googleProvider)
-  await createProfileIfNeeded(result.user)
-  return result
+export const googleProvider = new GoogleAuthProvider()
+
+async function createProfile(user, inviteCode) {
+  const displayName = user.displayName ?? ''
+  const parts       = displayName.split(' ')
+
+  await setDoc(doc(db, COLLECTION_USERS, user.uid), {
+    uid:          user.uid,
+    prenom:       parts[0] ?? '',
+    nom:          parts.slice(1).join(' '),
+    email:        user.email ?? '',
+    photoUrl:     user.photoURL ?? '',
+    photoDriveId: '',
+    countryCodes: [],
+    isAdmin:      false,
+    inviteCode,
+    createdAt:    Date.now(),
+  })
+}
+
+// Page de connexion : réservé aux comptes ayant déjà un profil famille.
+export async function signInWithGoogleLogin(auth) {
+  const { user } = await signInWithPopup(auth, googleProvider)
+  const snap = await getDoc(doc(db, COLLECTION_USERS, user.uid))
+  if (!snap.exists()) {
+    await signOut(auth)
+    const err = new Error('Aucun profil famille pour ce compte Google')
+    err.code = 'app/no-profile'
+    throw err
+  }
+}
+
+// Page d'inscription : crée le profil — le code famille est vérifié
+// par les règles Firestore, pas par le client.
+export async function signInWithGoogleRegister(auth, inviteCode) {
+  const { user } = await signInWithPopup(auth, googleProvider)
+  const snap = await getDoc(doc(db, COLLECTION_USERS, user.uid))
+  if (snap.exists()) return // déjà membre : simple connexion
+
+  try {
+    await createProfile(user, inviteCode)
+  } catch (err) {
+    await signOut(auth) // sans profil l'app resterait bloquée sur le spinner
+    throw err
+  }
 }

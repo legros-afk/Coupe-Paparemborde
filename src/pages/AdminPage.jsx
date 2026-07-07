@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, addDoc, updateDoc, collection, increment, writeBatch } from 'firebase/firestore'
+import { doc, addDoc, updateDoc, setDoc, getDoc, deleteDoc, deleteField, collection, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
-import { COLLECTION_USERS, COLLECTION_MATCHES, PHASES } from '../constants'
+import { COLLECTION_USERS, COLLECTION_MATCHES, COLLECTION_CONFIG, PHASES } from '../constants'
 import { PAYS, drapeau, nom } from '../data/countries'
 import { RWC2027_FIXTURES } from '../data/rwc2027fixtures'
-import { buildMatch } from '../utils/buildMatch'
+import { buildMatch, matchKey, matchDocId } from '../utils/buildMatch'
+import { buildCodeToUser, computeStandings, userCountries } from '../utils/standings'
 import PhotoProfil from '../components/PhotoProfil'
 import NavBar from '../components/NavBar'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -73,20 +74,48 @@ export default function AdminPage() {
 
 function OngletMembres() {
   const users = useUsers()
+  const { matches } = useMatches()
   const [selected, setSelected] = useState(null)
-  const [newCode, setNewCode]   = useState('')
+  const [codes, setCodes]       = useState([])
   const [saving, setSaving]     = useState(false)
   const [toast, setToast]       = useState(null)
 
+  // Code famille (vérifié par les règles Firestore à l'inscription)
+  const [inviteCode, setInviteCode] = useState('')
+  useEffect(() => {
+    getDoc(doc(db, COLLECTION_CONFIG, 'registration'))
+      .then(snap => { if (snap.exists()) setInviteCode(snap.data().inviteCode ?? '') })
+      .catch(() => {})
+  }, [])
+
+  const standings    = computeStandings(users, matches)
+  const codeVersUser = buildCodeToUser(users)
+
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
-  async function attribuer() {
-    if (!selected || !newCode) return
+  async function saveInviteCode() {
     setSaving(true)
     try {
-      await updateDoc(doc(db, COLLECTION_USERS, selected.uid), { countryCode: newCode })
-      showToast(`${drapeau(newCode)} attribué à ${selected.prenom}`)
-      setSelected(null); setNewCode('')
+      await setDoc(doc(db, COLLECTION_CONFIG, 'registration'), { inviteCode: inviteCode.trim() }, { merge: true })
+      showToast('Code famille enregistré')
+    } catch (e) { showToast('Erreur : ' + e.message) }
+    finally { setSaving(false) }
+  }
+
+  function toggleCode(code) {
+    setCodes(c => c.includes(code) ? c.filter(x => x !== code) : [...c, code])
+  }
+
+  async function attribuer() {
+    if (!selected) return
+    setSaving(true)
+    try {
+      await updateDoc(doc(db, COLLECTION_USERS, selected.uid), {
+        countryCodes: codes,
+        countryCode:  deleteField(), // purge de l'ancien champ single-pays
+      })
+      showToast(`${codes.length} pays attribué(s) à ${selected.prenom}`)
+      setSelected(null)
     } catch (e) {
       showToast('Erreur : ' + e.message)
     } finally { setSaving(false) }
@@ -104,44 +133,71 @@ function OngletMembres() {
       {selected && (
         <div className="fixed inset-0 bg-black/40 z-40 flex items-end justify-center" onClick={() => setSelected(null)}>
           <div className="bg-white rounded-t-3xl w-full max-w-lg p-6 pb-8" onClick={e => e.stopPropagation()}>
-            <h2 className="font-bold text-warm-black mb-1">Attribuer un pays</h2>
-            <p className="text-sm text-warm-gray mb-4">{selected.prenom} {selected.nom}</p>
+            <h2 className="font-bold text-warm-black mb-1">Attribuer des pays</h2>
+            <p className="text-sm text-warm-gray mb-4">
+              {selected.prenom} {selected.nom} · {codes.length} pays sélectionné(s)
+            </p>
             <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto mb-4">
-              {PAYS.map(p => (
-                <button key={p.code} onClick={() => setNewCode(p.code)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${
-                    newCode === p.code
-                      ? 'border-orange-rwc bg-orange-50 text-orange-rwc font-semibold'
-                      : 'border-gray-100 bg-gray-50 text-warm-black'
-                  }`}>
-                  <span>{p.drapeau}</span>
-                  <span className="truncate">{p.nom}</span>
-                </button>
-              ))}
+              {PAYS.map(p => {
+                const owner = codeVersUser[p.code]
+                const taken = owner && owner.uid !== selected.uid
+                const on    = codes.includes(p.code)
+                return (
+                  <button key={p.code} onClick={() => !taken && toggleCode(p.code)} disabled={taken}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${
+                      on     ? 'border-orange-rwc bg-orange-50 text-orange-rwc font-semibold'
+                      : taken ? 'border-gray-100 bg-gray-50 text-warm-gray/50'
+                      :        'border-gray-100 bg-gray-50 text-warm-black'
+                    }`}>
+                    <span>{p.drapeau}</span>
+                    <span className="truncate flex-1 text-left">{p.nom}</span>
+                    {on && <span>✓</span>}
+                    {taken && <span className="text-[10px] truncate">{owner.prenom}</span>}
+                  </button>
+                )
+              })}
             </div>
-            <button onClick={attribuer} disabled={!newCode || saving}
+            <button onClick={attribuer} disabled={saving}
               className="w-full bg-orange-rwc text-white font-semibold py-3 rounded-xl disabled:opacity-40">
-              {saving ? '…' : 'Attribuer'}
+              {saving ? '…' : 'Enregistrer'}
             </button>
           </div>
         </div>
       )}
 
+      {/* Code famille */}
+      <div className="bg-white rounded-2xl px-4 py-3 shadow-sm">
+        <p className="text-xs font-semibold text-warm-gray mb-2">
+          🔑 Code famille (requis à l'inscription — vide = inscriptions bloquées)
+        </p>
+        <div className="flex gap-2">
+          <input value={inviteCode} onChange={e => setInviteCode(e.target.value)}
+            placeholder="ex. PAPAREMBORDE2027"
+            className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-rwc/50" />
+          <button onClick={saveInviteCode} disabled={saving}
+            className="bg-orange-rwc text-white font-semibold px-4 rounded-xl text-sm disabled:opacity-40">
+            OK
+          </button>
+        </div>
+      </div>
+
       <p className="text-xs text-warm-gray">{users.length} membre(s) inscrit(s)</p>
 
-      {users.map(u => (
+      {standings.map(u => (
         <div key={u.uid} className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
           <PhotoProfil url={u.photoUrl} prenom={u.prenom} size={40} />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-warm-black truncate">{u.prenom} {u.nom}</p>
             <p className="text-xs text-warm-gray truncate">{u.email}</p>
-            {u.countryCode && (
-              <p className="text-xs text-orange-rwc mt-0.5">{drapeau(u.countryCode)} {nom(u.countryCode)}</p>
+            {userCountries(u).length > 0 && (
+              <p className="text-xs text-orange-rwc mt-0.5 truncate">
+                {userCountries(u).map(c => drapeau(c)).join(' ')}
+              </p>
             )}
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <span className="text-sm font-bold text-orange-rwc">{u.points ?? 0} pts</span>
-            <button onClick={() => { setSelected(u); setNewCode(u.countryCode ?? '') }}
+            <span className="text-sm font-bold text-orange-rwc">{u.points} pts</span>
+            <button onClick={() => { setSelected(u); setCodes(userCountries(u)) }}
               className="text-xs bg-orange-50 text-orange-rwc font-semibold px-3 py-1 rounded-full">
               🏳️ Pays
             </button>
@@ -188,14 +244,31 @@ function OngletMatchs() {
   async function chargerRwc2027() {
     setSaving(true)
     try {
+      // Idempotent : les matchs déjà présents (même affiche, même phase) sont ignorés
+      const existing = new Set(matches.map(matchKey))
       const batch = writeBatch(db)
+      let added = 0
       for (const f of RWC2027_FIXTURES) {
-        batch.set(doc(collection(db, COLLECTION_MATCHES)), buildMatch(f))
+        const m = buildMatch(f)
+        if (existing.has(matchKey(m))) continue
+        batch.set(doc(db, COLLECTION_MATCHES, matchDocId(m)), m)
+        existing.add(matchKey(m))
+        added++
       }
+      if (added === 0) { showToast('Tous les matchs RWC 2027 sont déjà importés'); return }
       await batch.commit()
-      showToast(`${RWC2027_FIXTURES.length} matchs RWC 2027 importés !`)
+      const skipped = RWC2027_FIXTURES.length - added
+      showToast(`${added} match(s) importé(s)${skipped ? `, ${skipped} déjà présent(s)` : ''} !`)
     } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
+  }
+
+  async function supprimerMatch(m) {
+    if (!window.confirm(`Supprimer ${nom(m.homeTeamCode)} vs ${nom(m.awayTeamCode)} ?`)) return
+    try {
+      await deleteDoc(doc(db, COLLECTION_MATCHES, m.id))
+      showToast('Match supprimé')
+    } catch (err) { showToast('Erreur : ' + err.message) }
   }
 
   async function importerJson() {
@@ -213,12 +286,20 @@ function OngletMatchs() {
         catch (err) { throw new Error(`match ${i + 1} : ${err.message}`) }
       })
 
+      const existing = new Set(matches.map(matchKey))
       const batch = writeBatch(db)
+      let added = 0
       for (const m of docs) {
-        batch.set(doc(collection(db, COLLECTION_MATCHES)), m)
+        if (existing.has(matchKey(m))) continue
+        batch.set(doc(db, COLLECTION_MATCHES, matchDocId(m)), m)
+        existing.add(matchKey(m))
+        added++
       }
+      if (added === 0) { showToast('Tous ces matchs sont déjà présents'); return }
       await batch.commit()
-      showToast(`${docs.length} match(s) importé(s) !`); setShowJson(false); setJsonText('')
+      const skipped = docs.length - added
+      showToast(`${added} match(s) importé(s)${skipped ? `, ${skipped} déjà présent(s)` : ''} !`)
+      setShowJson(false); setJsonText('')
     } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
   }
@@ -335,6 +416,12 @@ function OngletMatchs() {
           {m.statut === 'TERMINE' && (
             <p className="text-center text-sm font-bold text-orange-rwc mt-1">{m.homeScore} – {m.awayScore}</p>
           )}
+          <div className="flex justify-end mt-1">
+            <button onClick={() => supprimerMatch(m)} aria-label="Supprimer le match"
+              className="text-xs text-red-400 font-medium px-2 py-1">
+              🗑 Supprimer
+            </button>
+          </div>
         </div>
       ))}
     </div>
@@ -345,23 +432,35 @@ function OngletMatchs() {
 
 function OngletScores() {
   const { matches } = useMatches()
-  const users   = useUsers()
-  const pending = matches.filter(m => m.statut !== 'TERMINE').sort((a, b) => a.dateTimestamp - b.dateTimestamp)
+  const pending  = matches.filter(m => m.statut !== 'TERMINE').sort((a, b) => a.dateTimestamp - b.dateTimestamp)
+  const termines = matches.filter(m => m.statut === 'TERMINE').sort((a, b) => b.dateTimestamp - a.dateTimestamp)
 
   return (
     <div className="px-4 py-4 flex flex-col gap-3">
-      <p className="text-xs text-warm-gray">Saisir les scores des matchs terminés</p>
+      <p className="text-xs text-warm-gray">
+        Saisir les scores — le classement est recalculé automatiquement à partir des matchs terminés
+      </p>
       {pending.length === 0 && (
         <p className="text-center text-warm-gray py-8 text-sm">Aucun match en attente</p>
       )}
-      {pending.map(m => <CarteSaisieScore key={m.id} match={m} users={users} />)}
+      {pending.map(m => <CarteSaisieScore key={m.id} match={m} />)}
+
+      {termines.length > 0 && (
+        <>
+          <h3 className="text-sm font-bold text-warm-black mt-4">✏️ Corriger un score</h3>
+          {termines.map(m => <CarteSaisieScore key={m.id} match={m} />)}
+        </>
+      )}
     </div>
   )
 }
 
-function CarteSaisieScore({ match, users }) {
-  const [home, setHome]   = useState('')
-  const [away, setAway]   = useState('')
+// La saisie ne modifie que le document match : les points des membres sont
+// dérivés (computeStandings), donc corriger un score reste toujours cohérent.
+function CarteSaisieScore({ match }) {
+  const done = match.statut === 'TERMINE'
+  const [home, setHome]   = useState(done ? String(match.homeScore) : '')
+  const [away, setAway]   = useState(done ? String(match.awayScore) : '')
   const [saving, setSaving] = useState(false)
   const [toast, setToast]   = useState(null)
 
@@ -369,31 +468,25 @@ function CarteSaisieScore({ match, users }) {
 
   async function valider() {
     const h = parseInt(home), v = parseInt(away)
-    if (isNaN(h) || isNaN(v)) return
+    if (isNaN(h) || isNaN(v) || h < 0 || v < 0) return
     setSaving(true)
     try {
-      // 1. Update match
       await updateDoc(doc(db, COLLECTION_MATCHES, match.id), {
         homeScore: h, awayScore: v, statut: 'TERMINE'
       })
+      showToast(done ? 'Score corrigé !' : 'Score enregistré !')
+    } catch (err) { showToast('Erreur : ' + err.message) }
+    finally { setSaving(false) }
+  }
 
-      // 2. Award points
-      const winner  = h > v ? match.homeTeamCode : v > h ? match.awayTeamCode : null
-      const pts     = PHASES[match.phase]?.points ?? 0
-      const batch   = writeBatch(db)
-
-      users.forEach(u => {
-        if (!u.countryCode) return
-        const ref = doc(db, COLLECTION_USERS, u.uid)
-        if (u.countryCode === winner && pts > 0) {
-          batch.update(ref, { points: increment(pts), victoires: increment(1), matchsJoues: increment(1) })
-        } else if (u.countryCode === match.homeTeamCode || u.countryCode === match.awayTeamCode) {
-          batch.update(ref, { matchsJoues: increment(1) })
-        }
+  async function annuler() {
+    setSaving(true)
+    try {
+      await updateDoc(doc(db, COLLECTION_MATCHES, match.id), {
+        homeScore: null, awayScore: null, statut: 'PLANIFIE'
       })
-      await batch.commit()
-      showToast('Score enregistré et points calculés !')
       setHome(''); setAway('')
+      showToast('Résultat annulé')
     } catch (err) { showToast('Erreur : ' + err.message) }
     finally { setSaving(false) }
   }
@@ -413,17 +506,26 @@ function CarteSaisieScore({ match, users }) {
       <p className="text-xs text-warm-gray text-center mb-3">{PHASES[match.phase]?.label} · {formatDate(match.dateTimestamp)}</p>
       <div className="flex items-center gap-2">
         <input type="number" min="0" max="999" value={home} onChange={e => setHome(e.target.value)}
-          placeholder="0"
+          placeholder="0" aria-label={`Score ${nom(match.homeTeamCode)}`}
           className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-orange-rwc/50" />
         <span className="text-warm-gray font-bold">–</span>
         <input type="number" min="0" max="999" value={away} onChange={e => setAway(e.target.value)}
-          placeholder="0"
+          placeholder="0" aria-label={`Score ${nom(match.awayTeamCode)}`}
           className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-orange-rwc/50" />
         <button onClick={valider} disabled={home === '' || away === '' || saving}
+          aria-label="Valider le score"
           className="bg-orange-rwc text-white font-bold w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-40 flex-shrink-0">
           {saving ? '…' : '✓'}
         </button>
       </div>
+      {done && (
+        <div className="flex justify-end mt-2">
+          <button onClick={annuler} disabled={saving}
+            className="text-xs text-red-400 font-medium px-2 py-1">
+            ↩ Annuler le résultat
+          </button>
+        </div>
+      )}
     </div>
   )
 }
