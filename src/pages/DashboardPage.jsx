@@ -116,7 +116,13 @@ export default function DashboardPage() {
         {/* Rankings */}
         {top5.length > 0 && (
           <section>
-            <h2 className="text-base font-bold text-warm-black mb-3">🏆 Classement</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-warm-black">🏆 Classement</h2>
+              <button onClick={() => navigate('/classement')}
+                className="text-sm font-semibold text-orange-rwc">
+                Voir tout →
+              </button>
+            </div>
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
               {top5.map((u, i) => (
                 <div key={u.uid}

@@ -42,6 +42,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Chat — réservé aux membres. Messages immuables (pas d'édition ni de
+    // suppression) et signés : userId doit être celui de l'auteur.
+    match /chats/{salonId}/messages/{messageId} {
+      allow read: if hasProfile();
+      allow create: if hasProfile()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.texte is string
+        && request.resource.data.texte.size() > 0
+        && request.resource.data.texte.size() <= 2000
+        && request.resource.data.timestamp is number;
+    }
+
     // Config (code famille) — admin only ; les règles y accèdent via get()
     // sans que les clients aient besoin du droit de lecture.
     match /config/{docId} {

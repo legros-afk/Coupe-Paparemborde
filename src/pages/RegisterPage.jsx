@@ -84,7 +84,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-creme-light flex flex-col">
       {/* Top bar */}
       <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3">
-        <Link to="/login" className="text-2xl leading-none">←</Link>
+        <Link to="/login" aria-label="Retour à la connexion" className="text-2xl leading-none">←</Link>
         <h1 className="text-lg font-bold text-warm-black">Créer un compte</h1>
       </div>
 
@@ -152,6 +152,7 @@ export default function RegisterPage() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm pr-12 focus:outline-none focus:ring-2 focus:ring-orange-rwc/50 focus:border-orange-rwc"
                   placeholder="••••••••" required minLength={6} />
                 <button type="button" onClick={() => setShowMdp(v => !v)}
+                  aria-label={showMdp ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-gray text-lg">
                   {showMdp ? '🙈' : '👁️'}
                 </button>

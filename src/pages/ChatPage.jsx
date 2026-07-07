@@ -34,8 +34,12 @@ export default function ChatPage() {
   const match = !isGeneral ? allMatches.find(m => m.id === salonId) : null
   const codeVersUser = buildCodeToUser(allUsers)
 
+  const firstScroll = useRef(true)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length === 0) return
+    // instantané au premier affichage, animé pour les nouveaux messages
+    bottomRef.current?.scrollIntoView({ behavior: firstScroll.current ? 'auto' : 'smooth' })
+    firstScroll.current = false
   }, [messages])
 
   async function handleSend(e) {
@@ -57,11 +61,12 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100dvh - 60px)' }}>
+    // 60px de NavBar + safe-area (barre home iPhone) — sinon l'input passe dessous
+    <div className="flex flex-col" style={{ height: 'calc(100dvh - 60px - env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="bg-orange-rwc px-4 pt-12 pb-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-white text-xl leading-none">←</button>
+          <button onClick={() => navigate(-1)} aria-label="Retour" className="text-white text-xl leading-none">←</button>
           <div className="flex-1 min-w-0">
             {isGeneral ? (
               <>
@@ -111,7 +116,7 @@ export default function ChatPage() {
                       }`}>
                         {msg.texte}
                       </div>
-                      <p className="text-[10px] text-warm-gray mt-1 px-1">
+                      <p className="text-[11px] text-warm-gray mt-1 px-1">
                         {formatTime(msg.timestamp)}
                       </p>
                     </div>
@@ -134,7 +139,7 @@ export default function ChatPage() {
           className="flex-1 border border-gray-200 rounded-2xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-rwc/50 focus:border-orange-rwc max-h-24"
           style={{ lineHeight: '1.4' }}
         />
-        <button type="submit" disabled={!texte.trim() || sending}
+        <button type="submit" disabled={!texte.trim() || sending} aria-label="Envoyer"
           className="w-10 h-10 flex-shrink-0 bg-orange-rwc rounded-full flex items-center justify-center disabled:opacity-40 active:scale-95 transition-transform">
           <span className="text-white text-base">{sending ? '…' : '➤'}</span>
         </button>

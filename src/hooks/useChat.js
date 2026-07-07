@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
-import { ref, onValue, push, set } from 'firebase/database'
-import { rtdb } from '../firebase'
-import { DB_CHATS } from '../constants'
+import { collection, onSnapshot, orderBy, query, limitToLast, addDoc } from 'firebase/firestore'
+import { db } from '../firebase'
+import { COLLECTION_CHATS } from '../constants'
 
+// Chat sur Firestore (l'ancien Realtime Database est verrouillé) : les règles
+// exigent un profil famille, ce que le RTDB ne permettait pas de vérifier.
 function cheminSalon(salonId) {
-  return salonId === 'general'
-    ? `${DB_CHATS}/general`
-    : `${DB_CHATS}/match_${salonId}`
+  return salonId === 'general' ? 'general' : `match_${salonId}`
+}
+
+function messagesRef(salonId) {
+  return collection(db, COLLECTION_CHATS, cheminSalon(salonId), 'messages')
 }
 
 export function useChat(salonId) {
@@ -16,23 +20,16 @@ export function useChat(salonId) {
   useEffect(() => {
     if (!salonId) return
     setLoading(true)
-    const dbRef = ref(rtdb, cheminSalon(salonId))
-    const unsub = onValue(dbRef, (snapshot) => {
-      const msgs = []
-      snapshot.forEach((child) => {
-        msgs.push({ id: child.key, ...child.val() })
-      })
-      msgs.sort((a, b) => a.timestamp - b.timestamp)
-      setMessages(msgs)
+    const q = query(messagesRef(salonId), orderBy('timestamp'), limitToLast(100))
+    const unsub = onSnapshot(q, (snap) => {
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })))
       setLoading(false)
     })
-    return () => unsub()
+    return unsub
   }, [salonId])
 
   const sendMessage = useCallback(async (salonId, message) => {
-    const dbRef  = ref(rtdb, cheminSalon(salonId))
-    const newRef = push(dbRef)
-    await set(newRef, { ...message, id: newRef.key })
+    await addDoc(messagesRef(salonId), message)
   }, [])
 
   return { messages, loading, sendMessage }

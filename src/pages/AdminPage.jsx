@@ -43,7 +43,7 @@ export default function AdminPage() {
   ]
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100dvh - 60px)' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100dvh - 60px - env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="bg-orange-rwc px-4 pt-12 pb-0 flex-shrink-0">
         <h1 className="text-base font-bold text-white mb-3">⚙️ Administration</h1>
@@ -491,6 +491,16 @@ function CarteSaisieScore({ match }) {
     finally { setSaving(false) }
   }
 
+  async function toggleDirect() {
+    setSaving(true)
+    try {
+      const nouveau = match.statut === 'EN_COURS' ? 'PLANIFIE' : 'EN_COURS'
+      await updateDoc(doc(db, COLLECTION_MATCHES, match.id), { statut: nouveau })
+      showToast(nouveau === 'EN_COURS' ? 'Match en direct 🔴' : 'Match repassé à venir')
+    } catch (err) { showToast('Erreur : ' + err.message) }
+    finally { setSaving(false) }
+  }
+
   return (
     <div className="bg-white rounded-2xl px-4 py-3 shadow-sm">
       {toast && (
@@ -518,14 +528,20 @@ function CarteSaisieScore({ match }) {
           {saving ? '…' : '✓'}
         </button>
       </div>
-      {done && (
-        <div className="flex justify-end mt-2">
+      <div className="flex justify-end mt-2 gap-2">
+        {!done && (
+          <button onClick={toggleDirect} disabled={saving}
+            className="text-xs text-red-500 font-medium px-2 py-1">
+            {match.statut === 'EN_COURS' ? '⏸ Plus en direct' : '🔴 En direct'}
+          </button>
+        )}
+        {done && (
           <button onClick={annuler} disabled={saving}
             className="text-xs text-red-400 font-medium px-2 py-1">
             ↩ Annuler le résultat
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

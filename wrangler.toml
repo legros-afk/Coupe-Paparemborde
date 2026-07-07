@@ -2,6 +2,11 @@ name = "coupe-paparemborde"
 account_id = "42ca38ab2edb69a27e062af596e22cb1"
 compatibility_date = "2026-04-15"
 
+# Domaine : Cloudflare crée le DNS + certificat automatiquement au deploy
+routes = [
+  { pattern = "rwc.figaroprojects.com", custom_domain = true }
+]
+
 [assets]
 directory = "./dist"
 not_found_handling = "single-page-application"

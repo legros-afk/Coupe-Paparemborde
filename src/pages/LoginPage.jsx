@@ -114,6 +114,7 @@ export default function LoginPage() {
                   placeholder="••••••••" required
                 />
                 <button type="button" onClick={() => setShowMdp(v => !v)}
+                  aria-label={showMdp ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-gray text-lg">
                   {showMdp ? '🙈' : '👁️'}
                 </button>

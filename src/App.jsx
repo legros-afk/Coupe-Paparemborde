@@ -6,6 +6,7 @@ import LoginPage    from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import MatchesPage   from './pages/MatchesPage'
+import RankingPage   from './pages/RankingPage'
 import ChatPage      from './pages/ChatPage'
 import ProfilePage   from './pages/ProfilePage'
 import AdminPage     from './pages/AdminPage'
@@ -46,6 +47,9 @@ export default function App() {
       } />
       <Route path="/matchs" element={
         <PrivateRoute><AppLayout><MatchesPage /></AppLayout></PrivateRoute>
+      } />
+      <Route path="/classement" element={
+        <PrivateRoute><AppLayout><RankingPage /></AppLayout></PrivateRoute>
       } />
       <Route path="/chat/:salonId" element={
         <PrivateRoute><ChatPage /></PrivateRoute>
