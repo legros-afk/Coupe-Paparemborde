@@ -1,5 +1,6 @@
 import StatutBadge from './StatutBadge'
-import { drapeau, nom } from '../data/countries'
+import Flag from './Flag'
+import { nom } from '../data/countries'
 import { PHASES } from '../constants'
 
 function formatDate(ts) {
@@ -36,7 +37,7 @@ export default function CarteMatch({ match, homeUser, awayUser, onClick }) {
       <div className="flex items-center justify-between gap-2">
         {/* Home */}
         <div className="flex flex-col items-center flex-1 gap-1">
-          <span className="text-3xl">{drapeau(match.homeTeamCode)}</span>
+          <Flag code={match.homeTeamCode} width={40} />
           <span className="text-xs font-medium text-center text-warm-black leading-tight">
             {homeUser ? homeUser.prenom : nom(match.homeTeamCode)}
           </span>
@@ -66,7 +67,7 @@ export default function CarteMatch({ match, homeUser, awayUser, onClick }) {
 
         {/* Away */}
         <div className="flex flex-col items-center flex-1 gap-1">
-          <span className="text-3xl">{drapeau(match.awayTeamCode)}</span>
+          <Flag code={match.awayTeamCode} width={40} />
           <span className="text-xs font-medium text-center text-warm-black leading-tight">
             {awayUser ? awayUser.prenom : nom(match.awayTeamCode)}
           </span>

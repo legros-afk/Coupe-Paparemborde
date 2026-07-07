@@ -7,11 +7,12 @@ import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
 import { COLLECTION_USERS, COLLECTION_MATCHES, COLLECTION_CONFIG, PHASES } from '../constants'
-import { PAYS, drapeau, nom } from '../data/countries'
+import { PAYS, nom } from '../data/countries'
 import { RWC2027_FIXTURES } from '../data/rwc2027fixtures'
 import { buildMatch, matchKey, matchDocId } from '../utils/buildMatch'
 import { buildCodeToUser, computeStandings, userCountries } from '../utils/standings'
 import PhotoProfil from '../components/PhotoProfil'
+import Flag from '../components/Flag'
 import NavBar from '../components/NavBar'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -190,7 +191,7 @@ function OngletMembres() {
                       : taken ? 'border-gray-100 bg-gray-50 text-warm-gray/50'
                       :        'border-gray-100 bg-gray-50 text-warm-black'
                     }`}>
-                    <span>{p.drapeau}</span>
+                    <Flag code={p.code} width={20} />
                     <span className="truncate flex-1 text-left">{p.nom}</span>
                     {on && <span>✓</span>}
                     {taken && <span className="text-[10px] truncate">{owner.prenom}</span>}
@@ -223,7 +224,7 @@ function OngletMembres() {
                       on ? 'border-orange-rwc bg-orange-50 text-orange-rwc font-semibold'
                          : 'border-gray-100 bg-gray-50 text-warm-gray/60'
                     }`}>
-                    <span>{p.drapeau}</span>
+                    <Flag code={p.code} width={20} />
                     <span className="truncate flex-1 text-left">{p.nom}</span>
                     {on && <span>✓</span>}
                   </button>
@@ -273,8 +274,8 @@ function OngletMembres() {
             <p className="font-semibold text-sm text-warm-black truncate">{u.prenom} {u.nom}</p>
             <p className="text-xs text-warm-gray truncate">{u.email}</p>
             {userCountries(u).length > 0 && (
-              <p className="text-xs text-orange-rwc mt-0.5 truncate">
-                {userCountries(u).map(c => drapeau(c)).join(' ')}
+              <p className="text-xs mt-1 flex items-center gap-1 flex-wrap">
+                {userCountries(u).map(c => <Flag key={c} code={c} width={16} />)}
               </p>
             )}
           </div>
@@ -488,13 +489,13 @@ function OngletMatchs() {
       {matches.map(m => (
         <div key={m.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-lg">{drapeau(m.homeTeamCode)}</span>
+            <Flag code={m.homeTeamCode} width={24} />
             <div className="flex-1 mx-2 text-center">
               <p className="text-xs font-semibold text-warm-black">{nom(m.homeTeamCode)} vs {nom(m.awayTeamCode)}</p>
               <p className="text-xs text-warm-gray">{PHASES[m.phase]?.label ?? m.phase} {m.groupe ? `· Gr. ${m.groupe}` : ''}</p>
               <p className="text-xs text-warm-gray">{formatDate(m.dateTimestamp)}</p>
             </div>
-            <span className="text-lg">{drapeau(m.awayTeamCode)}</span>
+            <Flag code={m.awayTeamCode} width={24} />
           </div>
           {m.statut === 'TERMINE' && (
             <p className="text-center text-sm font-bold text-orange-rwc mt-1">{m.homeScore} – {m.awayScore}</p>
@@ -592,9 +593,13 @@ function CarteSaisieScore({ match }) {
         </div>
       )}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold">{drapeau(match.homeTeamCode)} {nom(match.homeTeamCode)}</span>
+        <span className="text-sm font-semibold flex items-center gap-1.5">
+          <Flag code={match.homeTeamCode} width={20} /> {nom(match.homeTeamCode)}
+        </span>
         <span className="text-xs text-warm-gray">vs</span>
-        <span className="text-sm font-semibold">{nom(match.awayTeamCode)} {drapeau(match.awayTeamCode)}</span>
+        <span className="text-sm font-semibold flex items-center gap-1.5">
+          {nom(match.awayTeamCode)} <Flag code={match.awayTeamCode} width={20} />
+        </span>
       </div>
       <p className="text-xs text-warm-gray text-center mb-3">{PHASES[match.phase]?.label} · {formatDate(match.dateTimestamp)}</p>
       <div className="flex items-center gap-2">

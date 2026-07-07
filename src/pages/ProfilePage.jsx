@@ -6,7 +6,8 @@ import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
 import PhotoProfil from '../components/PhotoProfil'
-import { drapeau, nom } from '../data/countries'
+import Flag from '../components/Flag'
+import { nom } from '../data/countries'
 import { PHASES } from '../constants'
 import { auth } from '../firebase'
 import { computeStandings, userCountries } from '../utils/standings'
@@ -58,8 +59,8 @@ export default function ProfilePage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               {mesPays.map(code => (
-                <div key={code} className="flex flex-col items-center gap-1 w-20">
-                  <span className="text-4xl">{drapeau(code)}</span>
+                <div key={code} className="flex flex-col items-center gap-1.5 w-20">
+                  <Flag code={code} width={48} />
                   <p className="text-xs font-semibold text-warm-black text-center leading-tight">{nom(code)}</p>
                 </div>
               ))}

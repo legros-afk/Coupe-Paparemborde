@@ -2,7 +2,7 @@ import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
 import PhotoProfil from '../components/PhotoProfil'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { drapeau } from '../data/countries'
+import Flag from '../components/Flag'
 import { computeStandings, userCountries } from '../utils/standings'
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -35,8 +35,8 @@ export default function RankingPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm text-warm-black truncate">{u.prenom} {u.nom}</p>
                 {userCountries(u).length > 0 && (
-                  <p className="text-xs text-warm-gray truncate">
-                    {userCountries(u).map(c => drapeau(c)).join(' ')}
+                  <p className="text-xs text-warm-gray flex items-center gap-1 flex-wrap">
+                    {userCountries(u).map(c => <Flag key={c} code={c} width={16} />)}
                   </p>
                 )}
               </div>

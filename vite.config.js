@@ -12,6 +12,17 @@ export default defineConfig({
       workbox: {
         // ne jamais intercepter les helpers d'auth Firebase
         navigateFallbackDenylist: [/^\/__/],
+        runtimeCaching: [
+          {
+            // drapeaux : cache-first, quasi immuables
+            urlPattern: /^https:\/\/flagcdn\.com\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'flags',
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+        ],
       },
     }),
   ],

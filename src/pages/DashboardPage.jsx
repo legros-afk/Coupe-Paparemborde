@@ -5,7 +5,8 @@ import { useUsers } from '../hooks/useUsers'
 import { useMatches } from '../hooks/useMatches'
 import CarteMatch from '../components/CarteMatch'
 import PhotoProfil from '../components/PhotoProfil'
-import { drapeau, nom } from '../data/countries'
+import Flag from '../components/Flag'
+import { nom } from '../data/countries'
 import { buildCodeToUser, computeStandings, userCountries } from '../utils/standings'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -53,11 +54,9 @@ export default function DashboardPage() {
           <div className="flex-1 min-w-0">
             <p className="font-bold text-warm-black">Bonjour, {profile.prenom} !</p>
             {mesPays.length > 0
-              ? <p className="text-sm text-warm-gray mt-0.5">
-                  {mesPays.length === 1
-                    ? <>{drapeau(mesPays[0])} {nom(mesPays[0])}</>
-                    : <>{mesPays.map(c => drapeau(c)).join(' ')} · {mesPays.length} pays</>
-                  }
+              ? <p className="text-sm text-warm-gray mt-0.5 flex items-center gap-1 flex-wrap">
+                  {mesPays.map(c => <Flag key={c} code={c} width={18} />)}
+                  <span className="ml-1">{mesPays.length === 1 ? nom(mesPays[0]) : `${mesPays.length} pays`}</span>
                 </p>
               : <p className="text-sm text-warm-gray/70 mt-0.5">Pays non encore attribués</p>
             }
@@ -134,8 +133,8 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-warm-black truncate">{u.prenom} {u.nom}</p>
                     {userCountries(u).length > 0 && (
-                      <p className="text-xs text-warm-gray truncate">
-                        {userCountries(u).map(c => drapeau(c)).join(' ')}
+                      <p className="text-xs text-warm-gray flex items-center gap-1 flex-wrap">
+                        {userCountries(u).map(c => <Flag key={c} code={c} width={16} />)}
                       </p>
                     )}
                   </div>

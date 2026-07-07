@@ -10,7 +10,8 @@ import { useUsers } from '../hooks/useUsers'
 import PhotoProfil from '../components/PhotoProfil'
 import LoadingSpinner from '../components/LoadingSpinner'
 import NavBar from '../components/NavBar'
-import { drapeau, nom } from '../data/countries'
+import { nom } from '../data/countries'
+import Flag from '../components/Flag'
 import { buildCodeToUser } from '../utils/standings'
 
 function formatTime(ts) {
@@ -78,8 +79,10 @@ export default function ChatPage() {
               </>
             ) : match ? (
               <>
-                <h1 className="text-base font-bold text-white">
-                  {drapeau(match.homeTeamCode)} vs {drapeau(match.awayTeamCode)}
+                <h1 className="text-base font-bold text-white flex items-center gap-2">
+                  <Flag code={match.homeTeamCode} width={22} />
+                  <span>vs</span>
+                  <Flag code={match.awayTeamCode} width={22} />
                 </h1>
                 <p className="text-white/75 text-xs">
                   ⚔️ {codeVersUser[match.homeTeamCode]?.prenom ?? nom(match.homeTeamCode)} vs {codeVersUser[match.awayTeamCode]?.prenom ?? nom(match.awayTeamCode)}
