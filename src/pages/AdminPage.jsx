@@ -22,6 +22,15 @@ function formatDate(ts) {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(ts))
 }
 
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -106,6 +115,38 @@ function OngletMembres() {
     setCodes(c => c.includes(code) ? c.filter(x => x !== code) : [...c, code])
   }
 
+  // Tirage au sort : distribue les pays sélectionnés équitablement, au hasard.
+  // Le reliquat (pays en trop pour une répartition égale) reste sans propriétaire.
+  const [showDraw, setShowDraw]   = useState(false)
+  const [drawCodes, setDrawCodes] = useState(PAYS.map(p => p.code))
+  const perPerson = users.length > 0 ? Math.floor(drawCodes.length / users.length) : 0
+  const leftover  = drawCodes.length - perPerson * users.length
+
+  function toggleDrawCode(code) {
+    setDrawCodes(c => c.includes(code) ? c.filter(x => x !== code) : [...c, code])
+  }
+
+  async function lancerTirage() {
+    if (perPerson === 0) return
+    if (!window.confirm(`Distribuer ${drawCodes.length} pays entre ${users.length} membres ? Toutes les attributions actuelles seront remplacées.`)) return
+    setSaving(true)
+    try {
+      const deck  = shuffle(drawCodes)
+      const ordre = shuffle(users)
+      const batch = writeBatch(db)
+      ordre.forEach((u, i) => {
+        batch.update(doc(db, COLLECTION_USERS, u.uid), {
+          countryCodes: deck.slice(i * perPerson, (i + 1) * perPerson).sort(),
+          countryCode:  deleteField(),
+        })
+      })
+      await batch.commit()
+      showToast(`🎉 Tirage effectué : ${perPerson} pays chacun${leftover ? `, ${leftover} sans propriétaire` : ''}`)
+      setShowDraw(false)
+    } catch (e) { showToast('Erreur : ' + e.message) }
+    finally { setSaving(false) }
+  }
+
   async function attribuer() {
     if (!selected) return
     setSaving(true)
@@ -164,6 +205,48 @@ function OngletMembres() {
           </div>
         </div>
       )}
+
+      {/* Tirage au sort dialog */}
+      {showDraw && (
+        <div className="fixed inset-0 bg-black/40 z-40 flex items-end justify-center" onClick={() => setShowDraw(false)}>
+          <div className="bg-white rounded-t-3xl w-full max-w-lg p-6 pb-8" onClick={e => e.stopPropagation()}>
+            <h2 className="font-bold text-warm-black mb-1">🎲 Tirage au sort</h2>
+            <p className="text-sm text-warm-gray mb-3">
+              Décochez les pays à laisser hors du chapeau (les plus faibles, par exemple).
+            </p>
+            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto mb-3">
+              {PAYS.map(p => {
+                const on = drawCodes.includes(p.code)
+                return (
+                  <button key={p.code} onClick={() => toggleDrawCode(p.code)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${
+                      on ? 'border-orange-rwc bg-orange-50 text-orange-rwc font-semibold'
+                         : 'border-gray-100 bg-gray-50 text-warm-gray/60'
+                    }`}>
+                    <span>{p.drapeau}</span>
+                    <span className="truncate flex-1 text-left">{p.nom}</span>
+                    {on && <span>✓</span>}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-warm-gray text-center mb-3">
+              {drawCodes.length} pays ÷ {users.length} membres → <strong>{perPerson} chacun</strong>
+              {leftover > 0 && <>, {leftover} sans propriétaire</>}
+            </p>
+            <button onClick={lancerTirage} disabled={perPerson === 0 || saving}
+              className="w-full bg-orange-rwc text-white font-semibold py-3 rounded-xl disabled:opacity-40">
+              {saving ? '…' : perPerson === 0 ? 'Pas assez de pays sélectionnés' : 'Lancer le tirage 🎲'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tirage au sort */}
+      <button onClick={() => setShowDraw(true)}
+        className="bg-teal-rwc text-white font-semibold py-3 rounded-2xl text-sm shadow-sm">
+        🎲 Tirage au sort des pays
+      </button>
 
       {/* Code famille */}
       <div className="bg-white rounded-2xl px-4 py-3 shadow-sm">

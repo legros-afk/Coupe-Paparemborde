@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
+import { useUnreadGeneral } from '../hooks/useUnreadGeneral'
 
 const links = [
   { to: '/dashboard',    icon: '🏠', label: 'Accueil' },
@@ -10,9 +11,10 @@ const links = [
 ]
 
 export default function NavBar() {
-  const { user } = useAuth()
-  const profile  = useCurrentUser(user?.uid)
-  const isAdmin  = profile?.isAdmin === true
+  const { user }  = useAuth()
+  const profile   = useCurrentUser(user?.uid)
+  const hasUnread = useUnreadGeneral(user?.uid)
+  const isAdmin   = profile?.isAdmin === true
 
   const allLinks = isAdmin
     ? [...links, { to: '/admin', icon: '⚙️', label: 'Admin' }]
@@ -32,7 +34,13 @@ export default function NavBar() {
               }`
             }
           >
-            <span className="text-xl leading-none">{icon}</span>
+            <span className="relative text-xl leading-none">
+              {icon}
+              {label === 'Chat' && hasUnread && (
+                <span className="absolute -top-0.5 -right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white"
+                      aria-label="Nouveaux messages" />
+              )}
+            </span>
             <span className="font-medium">{label}</span>
           </NavLink>
         ))}

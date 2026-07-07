@@ -1,6 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',       // nouvelle version activée au rechargement suivant
+      manifest: false,                  // public/manifest.json existe déjà
+      includeAssets: ['icon-192.png', 'icon-512.png', 'manifest.json'],
+      workbox: {
+        // ne jamais intercepter les helpers d'auth Firebase
+        navigateFallbackDenylist: [/^\/__/],
+      },
+    }),
+  ],
 })

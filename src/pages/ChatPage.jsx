@@ -4,6 +4,7 @@ import { useSwipeNav } from '../hooks/useSwipeNav'
 import { useAuth } from '../context/AuthContext'
 import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useChat } from '../hooks/useChat'
+import { markGeneralRead } from '../hooks/useUnreadGeneral'
 import { useMatches } from '../hooks/useMatches'
 import { useUsers } from '../hooks/useUsers'
 import PhotoProfil from '../components/PhotoProfil'
@@ -40,7 +41,9 @@ export default function ChatPage() {
     // instantané au premier affichage, animé pour les nouveaux messages
     bottomRef.current?.scrollIntoView({ behavior: firstScroll.current ? 'auto' : 'smooth' })
     firstScroll.current = false
-  }, [messages])
+    // le chat général est affiché : plus de badge « non lu »
+    if (isGeneral) markGeneralRead(messages[messages.length - 1].timestamp)
+  }, [messages, isGeneral])
 
   async function handleSend(e) {
     e.preventDefault()
