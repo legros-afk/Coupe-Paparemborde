@@ -12,6 +12,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import NavBar from '../components/NavBar'
 import { nom } from '../data/countries'
 import Flag from '../components/Flag'
+import DuelIcon from '../components/DuelIcon'
 import { buildCodeToUser } from '../utils/standings'
 
 function formatTime(ts) {
@@ -85,7 +86,7 @@ export default function ChatPage() {
                   <Flag code={match.awayTeamCode} width={22} />
                 </h1>
                 <p className="text-white/75 text-xs">
-                  ⚔️ {codeVersUser[match.homeTeamCode]?.prenom ?? nom(match.homeTeamCode)} vs {codeVersUser[match.awayTeamCode]?.prenom ?? nom(match.awayTeamCode)}
+                  <DuelIcon size={13} /> {codeVersUser[match.homeTeamCode]?.prenom ?? nom(match.homeTeamCode)} vs {codeVersUser[match.awayTeamCode]?.prenom ?? nom(match.awayTeamCode)}
                 </p>
               </>
             ) : (

@@ -82,7 +82,10 @@ export default function DashboardPage() {
         {/* Duels */}
         {duels.length > 0 && (
           <section>
-            <h2 className="text-base font-bold text-warm-black mb-3">⚔️ Duels familiaux</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <img src="/art/duel-mascot.png" alt="" width="40" height="40" className="rounded-full flex-shrink-0" />
+              <h2 className="text-base font-bold text-warm-black">Duels familiaux</h2>
+            </div>
             <div className="flex flex-col gap-3">
               {duels.slice(0, 3).map(m => (
                 <CarteMatch key={m.id} match={m}

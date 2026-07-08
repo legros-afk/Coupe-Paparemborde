@@ -1,5 +1,6 @@
 import StatutBadge from './StatutBadge'
 import Flag from './Flag'
+import DuelIcon from './DuelIcon'
 import { nom } from '../data/countries'
 import { PHASES } from '../constants'
 
@@ -77,7 +78,7 @@ export default function CarteMatch({ match, homeUser, awayUser, onClick }) {
       {/* Duel badge */}
       {isDuel && (
         <div className="mt-3 text-center">
-          <span className="text-xs font-semibold text-orange-rwc">⚔️ Duel familial !</span>
+          <span className="text-xs font-semibold text-orange-rwc"><DuelIcon size={14} /> Duel familial !</span>
         </div>
       )}
 
